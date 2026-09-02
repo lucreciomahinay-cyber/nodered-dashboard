@@ -1,0 +1,623 @@
+[
+    {
+        "id": "f6f2187d.f17ca8",
+        "type": "tab",
+        "label": "Rice Paddy Control and Monitoring Dashboard",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "paddy_mqtt_in",
+        "type": "mqtt in",
+        "z": "f6f2187d.f17ca8",
+        "name": "MQTT Telemetry In",
+        "topic": "paddy/telemetry",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "mqtt_broker_local",
+        "inputs": 0,
+        "x": 280,
+        "y": 280,
+        "wires": [
+            [
+                "parser_router"
+            ]
+        ]
+    },
+    {
+        "id": "parser_router",
+        "type": "function",
+        "z": "f6f2187d.f17ca8",
+        "name": "Extract Telemetry Fields",
+        "func": "var p = msg.payload;\nreturn [\n    { payload: p },\n    { payload: p.soil_z1 },\n    { payload: p.water_z1 },\n    { payload: p.soil_z2 },\n    { payload: p.water_z2 },\n    { payload: p.v_z1a === 1 },\n    { payload: p.v_z1b === 1 },\n    { payload: p.v_z2a === 1 },\n    { payload: p.v_z2b === 1 },\n    { payload: p.d_z1 === 1 },\n    { payload: p.d_z2 === 1 }\n];",
+        "outputs": 11,
+        "x": 510,
+        "y": 280,
+        "wires": [
+            [
+                "ui2_custom_status_card"
+            ],
+            [
+                "ui2_gauge_soil_z1"
+            ],
+            [
+                "ui2_gauge_water_z1"
+            ],
+            [
+                "ui2_gauge_soil_z2"
+            ],
+            [
+                "ui2_gauge_water_z2"
+            ],
+            [
+                "ui2_sw_v1a"
+            ],
+            [
+                "ui2_sw_v1b"
+            ],
+            [
+                "ui2_sw_v2a"
+            ],
+            [
+                "ui2_sw_v2b"
+            ],
+            [
+                "ui2_sw_dz1"
+            ],
+            [
+                "ui2_sw_dz2"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_custom_status_card",
+        "type": "ui-template",
+        "z": "f6f2187d.f17ca8",
+        "group": "group2_status",
+        "name": "HTML Status Display",
+        "order": 1,
+        "width": 12,
+        "height": 2,
+        "format": "<template>\n    <div style=\"display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #21262d; border-radius: 8px; border: 1px solid #30363d;\">\n        <div>\n            <span style=\"color: #8b949e; font-size: 11px; display: block; font-weight: bold;\">SYSTEM MODE</span>\n            <strong style=\"color: #58a6ff; font-size: 18px;\">{{ msg?.payload?.mode || 'OFFLINE' }}</strong>\n        </div>\n        <div style=\"text-align: right;\">\n            <span style=\"color: #8b949e; font-size: 11px; display: block; font-weight: bold; margin-bottom: 4px;\">GROWTH PHASE</span>\n            <span style=\"background: #238636; color: white; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 13px;\">\n                Phase {{ msg?.payload?.phase || '0' }}\n            </span>\n        </div>\n    </div>\n</template>",
+        "storeOutMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "x": 1000,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui2_sw_mode_toggle",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Mode Switch",
+        "label": "Manual Override Mode",
+        "group": "group2_status",
+        "order": 3,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "topic": "topic",
+        "onvalue": "MODE:1",
+        "onvalueType": "str",
+        "offvalue": "MODE:0",
+        "offvalueType": "str",
+        "x": 770,
+        "y": 300,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_phase_dropdown",
+        "type": "ui-dropdown",
+        "z": "f6f2187d.f17ca8",
+        "group": "group2_status",
+        "name": "Select Phase",
+        "label": "Set Growth Phase",
+        "order": 4,
+        "width": "6",
+        "height": "1",
+        "passthru": true,
+        "multiple": false,
+        "options": [
+            {
+                "label": "Auto Phase (Timer-Based)",
+                "value": "PHASE:0"
+            },
+            {
+                "label": "Phase 1: Water Level Maintained",
+                "value": "PHASE:1"
+            },
+            {
+                "label": "Phase 2: Soil Moisture Control",
+                "value": "PHASE:2"
+            },
+            {
+                "label": "Phase 3: Pre-Harvest Drainage",
+                "value": "PHASE:3"
+            }
+        ],
+        "payload": "",
+        "topic": "topic",
+        "x": 770,
+        "y": 360,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_gauge_soil_z1",
+        "type": "ui-gauge",
+        "z": "f6f2187d.f17ca8",
+        "name": "Zone 1 Soil Moisture",
+        "group": "group2_zone1_monitoring",
+        "order": 1,
+        "value": "payload",
+        "valueType": "msg",
+        "width": "3",
+        "height": "3",
+        "gtype": "gauge-half",
+        "title": "Soil Moisture",
+        "alwaysShowTitle": false,
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ca3838",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "30",
+                "color": "#e6a23c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "60",
+                "color": "#2ea043",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 100,
+        "sizeThickness": "",
+        "sizeGap": "",
+        "sizeKeyThickness": "",
+        "className": "",
+        "x": 1000,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui2_gauge_water_z1",
+        "type": "ui-gauge",
+        "z": "f6f2187d.f17ca8",
+        "name": "Zone 1 Water Level",
+        "group": "group2_zone1_monitoring",
+        "order": 2,
+        "value": "payload",
+        "valueType": "msg",
+        "width": "3",
+        "height": "3",
+        "gtype": "gauge-half",
+        "title": "Water Level",
+        "alwaysShowTitle": false,
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#e6a23c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "20",
+                "color": "#58a6ff",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "85",
+                "color": "#ca3838",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 100,
+        "sizeThickness": "",
+        "sizeGap": "",
+        "sizeKeyThickness": "",
+        "className": "",
+        "x": 990,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui2_gauge_soil_z2",
+        "type": "ui-gauge",
+        "z": "f6f2187d.f17ca8",
+        "name": "Zone 2 Soil Moisture",
+        "group": "group2_zone2_monitoring",
+        "order": 1,
+        "value": "payload",
+        "valueType": "msg",
+        "width": "3",
+        "height": "3",
+        "gtype": "gauge-half",
+        "title": "Soil Moisture",
+        "alwaysShowTitle": false,
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ca3838",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "30",
+                "color": "#e6a23c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "60",
+                "color": "#2ea043",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 100,
+        "sizeThickness": "",
+        "sizeGap": "",
+        "sizeKeyThickness": "",
+        "className": "",
+        "x": 1000,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui2_gauge_water_z2",
+        "type": "ui-gauge",
+        "z": "f6f2187d.f17ca8",
+        "name": "Zone 2 Water Level",
+        "group": "group2_zone2_monitoring",
+        "order": 2,
+        "value": "payload",
+        "valueType": "msg",
+        "width": "3",
+        "height": "3",
+        "gtype": "gauge-half",
+        "title": "Water Level",
+        "alwaysShowTitle": false,
+        "units": "%",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#e6a23c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "20",
+                "color": "#58a6ff",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "85",
+                "color": "#ca3838",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": 100,
+        "sizeThickness": "",
+        "sizeGap": "",
+        "sizeKeyThickness": "",
+        "className": "",
+        "x": 990,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ui2_sw_v1a",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Valve 1A Switch",
+        "label": "Zone 1 Valve A",
+        "group": "group2_manual_controls",
+        "order": 1,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "V_Z1A:1",
+        "onvalueType": "str",
+        "offvalue": "V_Z1A:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 420,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_sw_v1b",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Valve 1B Switch",
+        "label": "Zone 1 Valve B",
+        "group": "group2_manual_controls",
+        "order": 2,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "V_Z1B:1",
+        "onvalueType": "str",
+        "offvalue": "V_Z1B:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 480,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_sw_v2a",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Valve 2A Switch",
+        "label": "Zone 2 Valve A",
+        "group": "group2_manual_controls",
+        "order": 3,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "V_Z2A:1",
+        "onvalueType": "str",
+        "offvalue": "V_Z2A:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 540,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_sw_v2b",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Valve 2B Switch",
+        "label": "Zone 2 Valve B",
+        "group": "group2_manual_controls",
+        "order": 4,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "V_Z2B:1",
+        "onvalueType": "str",
+        "offvalue": "V_Z2B:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 600,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_sw_dz1",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Drain Z1 Switch",
+        "label": "Zone 1 Drain Servo",
+        "group": "group2_manual_controls",
+        "order": 5,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "D_Z1:1",
+        "onvalueType": "str",
+        "offvalue": "D_Z1:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 660,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "ui2_sw_dz2",
+        "type": "ui-switch",
+        "z": "f6f2187d.f17ca8",
+        "name": "Drain Z2 Switch",
+        "label": "Zone 2 Drain Servo",
+        "group": "group2_manual_controls",
+        "order": 6,
+        "width": "6",
+        "height": "1",
+        "passthru": false,
+        "onvalue": "D_Z2:1",
+        "onvalueType": "str",
+        "offvalue": "D_Z2:0",
+        "offvalueType": "str",
+        "x": 780,
+        "y": 720,
+        "wires": [
+            [
+                "paddy_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "paddy_mqtt_out",
+        "type": "mqtt out",
+        "z": "f6f2187d.f17ca8",
+        "name": "MQTT Command Out",
+        "topic": "paddy/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker_local",
+        "x": 1030,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "mqtt_broker_local",
+        "type": "mqtt-broker",
+        "name": "Local MQTT Broker",
+        "broker": "127.0.0.1",
+        "port": "1883",
+        "clientid": "nodered_paddy_db2",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true
+    },
+    {
+        "id": "group2_status",
+        "type": "ui-group",
+        "name": "System Overview",
+        "page": "db2_page_paddy",
+        "width": 12,
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": ""
+    },
+    {
+        "id": "group2_zone1_monitoring",
+        "type": "ui-group",
+        "name": "Zone 1 Monitoring",
+        "page": "db2_page_paddy",
+        "width": "6",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": ""
+    },
+    {
+        "id": "group2_zone2_monitoring",
+        "type": "ui-group",
+        "name": "Zone 2 Monitoring",
+        "page": "db2_page_paddy",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": ""
+    },
+    {
+        "id": "group2_manual_controls",
+        "type": "ui-group",
+        "name": "Manual Controls & Actuators",
+        "page": "db2_page_paddy",
+        "width": "12",
+        "height": "1",
+        "order": 4,
+        "showTitle": true,
+        "className": ""
+    },
+    {
+        "id": "db2_page_paddy",
+        "type": "ui-page",
+        "name": "Rice Paddy Control",
+        "ui": "db2_base_config",
+        "path": "/paddy",
+        "icon": "mdi-leaf",
+        "layout": "grid",
+        "theme": "db2_theme_dark",
+        "order": 1,
+        "className": ""
+    },
+    {
+        "id": "db2_base_config",
+        "type": "ui-base",
+        "name": "Paddy Control Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 5,
+        "showDisconnectNotification": true,
+        "allowInstall": true
+    },
+    {
+        "id": "db2_theme_dark",
+        "type": "ui-theme",
+        "name": "Dark Custom Theme",
+        "colors": {
+            "surface": "#161b22",
+            "primary": "#58a6ff"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "f4e8dd1d0604f2c4",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.31.0"
+        }
+    }
+]
