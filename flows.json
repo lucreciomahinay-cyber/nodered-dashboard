@@ -1,1292 +1,326 @@
 [
-    {
-        "id": "tab_rice_paddy",
-        "type": "tab",
-        "label": "Rice Paddy Monitoring",
-        "disabled": false,
-        "info": "IoT Rice Paddy Monitoring and Automation System"
-    },
-    {
-        "id": "ui_tab_rice",
-        "type": "ui_tab",
-        "name": "Rice Paddy",
-        "icon": "dashboard",
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "ui_group_system",
-        "type": "ui_group",
-        "name": "System Status",
-        "tab": "ui_tab_rice",
-        "order": 1,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "ui_group_zone1",
-        "type": "ui_group",
-        "name": "ZONE 1",
-        "tab": "ui_tab_rice",
-        "order": 2,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "ui_group_zone2",
-        "type": "ui_group",
-        "name": "ZONE 2",
-        "tab": "ui_tab_rice",
-        "order": 3,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "ui_group_environment",
-        "type": "ui_group",
-        "name": "Environment",
-        "tab": "ui_tab_rice",
-        "order": 4,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "ui_group_valves",
-        "type": "ui_group",
-        "name": "Valve Status",
-        "tab": "ui_tab_rice",
-        "order": 5,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "ui_group_manual",
-        "type": "ui_group",
-        "name": "Manual Controls",
-        "tab": "ui_tab_rice",
-        "order": 6,
-        "disp": true,
-        "width": "12",
-        "collapse": false
-    },
-    {
-        "id": "mqtt_tls",
-        "type": "tls-config",
-        "name": "HiveMQ Cloud TLS",
-        "cert": "",
-        "key": "",
-        "ca": "",
-        "certname": "",
-        "keyname": "",
-        "caname": "",
-        "servername": "",
-        "verifyservercert": true,
-        "alpnprotocol": ""
-    },
-    {
-        "id": "mqtt_broker_hivemq",
-        "type": "mqtt-broker",
-        "name": "HiveMQ Cloud",
-        "broker": "YOUR-HIVEMQ-HOST",
-        "port": "8883",
-        "tls": "mqtt_tls",
-        "clientid": "",
-        "autoConnect": true,
-        "usetls": true,
-        "protocolVersion": "4",
-        "keepalive": "60",
-        "cleansession": true,
-        "autoUnsubscribe": true,
-        "birthTopic": "",
-        "birthQos": "0",
-        "birthRetain": "false",
-        "birthPayload": "",
-        "birthMsg": {},
-        "closeTopic": "",
-        "closeQos": "0",
-        "closeRetain": "false",
-        "closePayload": "",
-        "closeMsg": {},
-        "willTopic": "",
-        "willQos": "0",
-        "willRetain": "false",
-        "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
-    },
-    {
-        "id": "mqtt_in_data",
-        "type": "mqtt in",
-        "z": "tab_rice_paddy",
-        "name": "Rice Paddy Sensor Data",
-        "topic": "ricepaddy/data",
-        "qos": "0",
-        "datatype": "auto-detect",
-        "broker": "mqtt_broker_hivemq",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 140,
-        "y": 100,
-        "wires": [
-            [
-                "json_sensor"
-            ]
-        ]
-    },
-    {
-        "id": "json_sensor",
-        "type": "json",
-        "z": "tab_rice_paddy",
-        "name": "Parse JSON",
-        "property": "payload",
-        "action": "",
-        "pretty": false,
-        "x": 330,
-        "y": 100,
-        "wires": [
-            [
-                "process_sensor"
-            ]
-        ]
-    },
-    {
-        "id": "process_sensor",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "Process Sensor Data",
-        "func": "let d = msg.payload;\n\nif (!d) {\n    return null;\n}\n\nfunction value(v, digits = 1) {\n    if (v === undefined || v === null || isNaN(Number(v))) {\n        return 0;\n    }\n    return Number(Number(v).toFixed(digits));\n}\n\nlet soil = Array.isArray(d.soil) ? d.soil : [0,0,0,0,0,0];\nlet water = Array.isArray(d.water) ? d.water : [0,0,0,0,0,0];\nlet valves = Array.isArray(d.valves) ? d.valves : [false,false,false,false];\n\nlet output = [];\n\n// 1 Mode\noutput[0] = {payload: d.mode || \"UNKNOWN\"};\n\n// 2 Phase\noutput[1] = {payload: d.phase || 0};\n\n// 3 Temperature\noutput[2] = {payload: value(d.temperature,1)};\n\n// 4 Humidity\noutput[3] = {payload: value(d.humidity,1)};\n\n// 5 Soil 1\noutput[4] = {payload: value(soil[0],1)};\n\n// 6 Soil 2\noutput[5] = {payload: value(soil[1],1)};\n\n// 7 Soil 3\noutput[6] = {payload: value(soil[2],1)};\n\n// 8 Zone 1 Soil Average\noutput[7] = {payload: value(d.zone1Soil,1)};\n\n// 9 Water 1\noutput[8] = {payload: value(water[0],1)};\n\n// 10 Water 2\noutput[9] = {payload: value(water[1],1)};\n\n// 11 Water 3\noutput[10] = {payload: value(water[2],1)};\n\n// 12 Zone 1 Water Average\noutput[11] = {payload: value(d.zone1Water,1)};\n\n// 13 Soil 4\noutput[12] = {payload: value(soil[3],1)};\n\n// 14 Soil 5\noutput[13] = {payload: value(soil[4],1)};\n\n// 15 Soil 6\noutput[14] = {payload: value(soil[5],1)};\n\n// 16 Zone 2 Soil Average\noutput[15] = {payload: value(d.zone2Soil,1)};\n\n// 17 Water 4\noutput[16] = {payload: value(water[3],1)};\n\n// 18 Water 5\noutput[17] = {payload: value(water[4],1)};\n\n// 19 Water 6\noutput[18] = {payload: value(water[5],1)};\n\n// 20 Zone 2 Water Average\noutput[19] = {payload: value(d.zone2Water,1)};\n\n// 21 Valve 1\noutput[20] = {payload: Boolean(valves[0])};\n\n// 22 Valve 2\noutput[21] = {payload: Boolean(valves[1])};\n\n// 23 Valve 3\noutput[22] = {payload: Boolean(valves[2])};\n\n// 24 Valve 4\noutput[23] = {payload: Boolean(valves[3])};\n\n// 25 Emergency drain\noutput[24] = {payload: Boolean(d.drain)};\n\nreturn output;",
-        "outputs": 25,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 540,
-        "y": 100,
-        "wires": [
-            [
-                "text_mode"
-            ],
-            [
-                "text_phase"
-            ],
-            [
-                "gauge_temp"
-            ],
-            [
-                "gauge_humidity"
-            ],
-            [
-                "gauge_soil1"
-            ],
-            [
-                "gauge_soil2"
-            ],
-            [
-                "gauge_soil3"
-            ],
-            [
-                "gauge_zone1soil"
-            ],
-            [
-                "gauge_water1"
-            ],
-            [
-                "gauge_water2"
-            ],
-            [
-                "gauge_water3"
-            ],
-            [
-                "gauge_zone1water"
-            ],
-            [
-                "gauge_soil4"
-            ],
-            [
-                "gauge_soil5"
-            ],
-            [
-                "gauge_soil6"
-            ],
-            [
-                "gauge_zone2soil"
-            ],
-            [
-                "gauge_water4"
-            ],
-            [
-                "gauge_water5"
-            ],
-            [
-                "gauge_water6"
-            ],
-            [
-                "gauge_zone2water"
-            ],
-            [
-                "status_v1"
-            ],
-            [
-                "status_v2"
-            ],
-            [
-                "status_v3"
-            ],
-            [
-                "status_v4"
-            ],
-            [
-                "status_drain"
-            ]
-        ]
-    },
-    {
-        "id": "text_mode",
-        "type": "ui_text",
-        "z": "tab_rice_paddy",
-        "group": "ui_group_system",
-        "order": 1,
-        "width": "6",
-        "height": "1",
-        "name": "Operating Mode",
-        "label": "MODE",
-        "format": "<b>{{msg.payload}}</b>",
-        "layout": "row-spread",
-        "className": "",
-        "x": 850,
-        "y": 180,
-        "wires": []
-    },
-    {
-        "id": "text_phase",
-        "type": "ui_text",
-        "z": "tab_rice_paddy",
-        "group": "ui_group_system",
-        "order": 2,
-        "width": "6",
-        "height": "1",
-        "name": "Crop Phase",
-        "label": "CROP PHASE",
-        "format": "<b>Phase {{msg.payload}}</b>",
-        "layout": "row-spread",
-        "className": "",
-        "x": 850,
-        "y": 220,
-        "wires": []
-    },
-    {
-        "id": "gauge_temp",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Temperature",
-        "group": "ui_group_environment",
-        "order": 1,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "Air Temperature",
-        "label": "°C",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 50,
-        "colors": [
-            "#00b500",
-            "#e6e600",
-            "#ca3838"
-        ],
-        "seg1": "20",
-        "seg2": "35",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 300,
-        "wires": []
-    },
-    {
-        "id": "gauge_humidity",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Humidity",
-        "group": "ui_group_environment",
-        "order": 2,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "Air Humidity",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#00b500",
-            "#e6e600",
-            "#ca3838"
-        ],
-        "seg1": "60",
-        "seg2": "85",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 340,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil1",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 1",
-        "group": "ui_group_zone1",
-        "order": 1,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 1",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 500,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil2",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 2",
-        "group": "ui_group_zone1",
-        "order": 2,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 2",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 540,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil3",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 3",
-        "group": "ui_group_zone1",
-        "order": 3,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 3",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 580,
-        "wires": []
-    },
-    {
-        "id": "gauge_zone1soil",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Zone 1 Soil Average",
-        "group": "ui_group_zone1",
-        "order": 4,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "ZONE 1 SOIL AVERAGE",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 620,
-        "wires": []
-    },
-    {
-        "id": "gauge_water1",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 1",
-        "group": "ui_group_zone1",
-        "order": 5,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 1",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 660,
-        "wires": []
-    },
-    {
-        "id": "gauge_water2",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 2",
-        "group": "ui_group_zone1",
-        "order": 6,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 2",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 700,
-        "wires": []
-    },
-    {
-        "id": "gauge_water3",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 3",
-        "group": "ui_group_zone1",
-        "order": 7,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 3",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 740,
-        "wires": []
-    },
-    {
-        "id": "gauge_zone1water",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Zone 1 Water Average",
-        "group": "ui_group_zone1",
-        "order": 8,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "ZONE 1 WATER LEVEL",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 780,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil4",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 4",
-        "group": "ui_group_zone2",
-        "order": 1,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 4",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 840,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil5",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 5",
-        "group": "ui_group_zone2",
-        "order": 2,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 5",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 880,
-        "wires": []
-    },
-    {
-        "id": "gauge_soil6",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Soil 6",
-        "group": "ui_group_zone2",
-        "order": 3,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Soil Sensor 6",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 920,
-        "wires": []
-    },
-    {
-        "id": "gauge_zone2soil",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Zone 2 Soil Average",
-        "group": "ui_group_zone2",
-        "order": 4,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "ZONE 2 SOIL AVERAGE",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "45",
-        "seg2": "60",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 960,
-        "wires": []
-    },
-    {
-        "id": "gauge_water4",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 4",
-        "group": "ui_group_zone2",
-        "order": 5,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 4",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 1000,
-        "wires": []
-    },
-    {
-        "id": "gauge_water5",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 5",
-        "group": "ui_group_zone2",
-        "order": 6,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 5",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 1040,
-        "wires": []
-    },
-    {
-        "id": "gauge_water6",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Water 6",
-        "group": "ui_group_zone2",
-        "order": 7,
-        "width": "4",
-        "height": "3",
-        "gtype": "gage",
-        "title": "Water Sensor 6",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 1080,
-        "wires": []
-    },
-    {
-        "id": "gauge_zone2water",
-        "type": "ui_gauge",
-        "z": "tab_rice_paddy",
-        "name": "Zone 2 Water Average",
-        "group": "ui_group_zone2",
-        "order": 8,
-        "width": "6",
-        "height": "4",
-        "gtype": "gage",
-        "title": "ZONE 2 WATER LEVEL",
-        "label": "%",
-        "format": "{{value}}",
-        "min": 0,
-        "max": 100,
-        "colors": [
-            "#ca3838",
-            "#e6e600",
-            "#00b500"
-        ],
-        "seg1": "40",
-        "seg2": "65",
-        "diff": false,
-        "className": "",
-        "x": 850,
-        "y": 1120,
-        "wires": []
-    },
-    {
-        "id": "status_v1",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "V1 Status",
-        "label": "V1 - Zone 1 Irrigation",
-        "tooltip": "",
-        "group": "ui_group_valves",
-        "order": 1,
-        "width": "6",
-        "height": "1",
-        "passthru": false,
-        "decouple": "true",
-        "topic": "status",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 850,
-        "y": 1180,
-        "wires": []
-    },
-    {
-        "id": "status_v2",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "V2 Status",
-        "label": "V2 - Zone 2 Irrigation",
-        "tooltip": "",
-        "group": "ui_group_valves",
-        "order": 2,
-        "width": "6",
-        "height": "1",
-        "passthru": false,
-        "decouple": "true",
-        "topic": "status",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 850,
-        "y": 1220,
-        "wires": []
-    },
-    {
-        "id": "status_v3",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "V3 Status",
-        "label": "V3 - Zone 1 Drainage",
-        "tooltip": "",
-        "group": "ui_group_valves",
-        "order": 3,
-        "width": "6",
-        "height": "1",
-        "passthru": false,
-        "decouple": "true",
-        "topic": "status",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 850,
-        "y": 1260,
-        "wires": []
-    },
-    {
-        "id": "status_v4",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "V4 Status",
-        "label": "V4 - Zone 2 Drainage",
-        "tooltip": "",
-        "group": "ui_group_valves",
-        "order": 4,
-        "width": "6",
-        "height": "1",
-        "passthru": false,
-        "decouple": "true",
-        "topic": "status",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 850,
-        "y": 1300,
-        "wires": []
-    },
-    {
-        "id": "status_drain",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Emergency Drain Status",
-        "label": "Emergency Drain",
-        "tooltip": "",
-        "group": "ui_group_valves",
-        "order": 5,
-        "width": "6",
-        "height": "1",
-        "passthru": false,
-        "decouple": "true",
-        "topic": "status",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 850,
-        "y": 1340,
-        "wires": []
-    },
-    {
-        "id": "manual_mode",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "AUTO MANUAL",
-        "label": "CONTROL MODE",
-        "tooltip": "OFF = AUTO, ON = MANUAL",
-        "group": "ui_group_manual",
-        "order": 1,
-        "width": "12",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "mode",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 170,
-        "y": 1420,
-        "wires": [
-            [
-                "function_mode"
-            ]
-        ]
-    },
-    {
-        "id": "function_mode",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "Create Mode Command",
-        "func": "if (msg.payload === true) {\n    msg.payload = JSON.stringify({mode:\"MANUAL\"});\n} else {\n    msg.payload = JSON.stringify({mode:\"AUTO\"});\n}\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 1420,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "manual_v1",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Manual V1",
-        "label": "V1 - ZONE 1 IRRIGATION",
-        "tooltip": "",
-        "group": "ui_group_manual",
-        "order": 2,
-        "width": "6",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "valve1",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 180,
-        "y": 1480,
-        "wires": [
-            [
-                "function_v1"
-            ]
-        ]
-    },
-    {
-        "id": "function_v1",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "V1 Command",
-        "func": "msg.payload = JSON.stringify({mode:\"MANUAL\",valve:1,value:Boolean(msg.payload)});\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 1480,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "manual_v2",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Manual V2",
-        "label": "V2 - ZONE 2 IRRIGATION",
-        "tooltip": "",
-        "group": "ui_group_manual",
-        "order": 3,
-        "width": "6",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "valve2",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 180,
-        "y": 1540,
-        "wires": [
-            [
-                "function_v2"
-            ]
-        ]
-    },
-    {
-        "id": "function_v2",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "V2 Command",
-        "func": "msg.payload = JSON.stringify({mode:\"MANUAL\",valve:2,value:Boolean(msg.payload)});\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 1540,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "manual_v3",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Manual V3",
-        "label": "V3 - ZONE 1 DRAINAGE",
-        "tooltip": "",
-        "group": "ui_group_manual",
-        "order": 4,
-        "width": "6",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "valve3",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 180,
-        "y": 1600,
-        "wires": [
-            [
-                "function_v3"
-            ]
-        ]
-    },
-    {
-        "id": "function_v3",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "V3 Command",
-        "func": "msg.payload = JSON.stringify({mode:\"MANUAL\",valve:3,value:Boolean(msg.payload)});\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 1600,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "manual_v4",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Manual V4",
-        "label": "V4 - ZONE 2 DRAINAGE",
-        "tooltip": "",
-        "group": "ui_group_manual",
-        "order": 5,
-        "width": "6",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "valve4",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 180,
-        "y": 1660,
-        "wires": [
-            [
-                "function_v4"
-            ]
-        ]
-    },
-    {
-        "id": "function_v4",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "V4 Command",
-        "func": "msg.payload = JSON.stringify({mode:\"MANUAL\",valve:4,value:Boolean(msg.payload)});\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
-        "y": 1660,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "manual_drain",
-        "type": "ui_switch",
-        "z": "tab_rice_paddy",
-        "name": "Manual Emergency Drain",
-        "label": "EMERGENCY DRAIN",
-        "tooltip": "",
-        "group": "ui_group_manual",
-        "order": 6,
-        "width": "6",
-        "height": "1",
-        "passthru": true,
-        "decouple": "false",
-        "topic": "drain",
-        "topicType": "str",
-        "style": "",
-        "onvalue": "true",
-        "onvalueType": "bool",
-        "offvalue": "false",
-        "offvalueType": "bool",
-        "animate": false,
-        "className": "",
-        "x": 180,
-        "y": 1720,
-        "wires": [
-            [
-                "function_drain"
-            ]
-        ]
-    },
-    {
-        "id": "function_drain",
-        "type": "function",
-        "z": "tab_rice_paddy",
-        "name": "Emergency Drain Command",
-        "func": "msg.payload = JSON.stringify({mode:\"MANUAL\",drain:Boolean(msg.payload)});\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 440,
-        "y": 1720,
-        "wires": [
-            [
-                "mqtt_out_command"
-            ]
-        ]
-    },
-    {
-        "id": "mqtt_out_command",
-        "type": "mqtt out",
-        "z": "tab_rice_paddy",
-        "name": "Send Command to ESP32",
-        "topic": "ricepaddy/command",
-        "qos": "0",
-        "retain": "false",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "mqtt_broker_hivemq",
-        "x": 760,
-        "y": 1500,
-        "wires": []
-    },
-    {
-        "id": "mqtt_in_status",
-        "type": "mqtt in",
-        "z": "tab_rice_paddy",
-        "name": "ESP32 Status",
-        "topic": "ricepaddy/status",
-        "qos": "0",
-        "datatype": "auto-detect",
-        "broker": "mqtt_broker_hivemq",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 150,
-        "y": 1800,
-        "wires": [
-            [
-                "status_parser"
-            ]
-        ]
-    },
-    {
-        "id": "status_parser",
-        "type": "json",
-        "z": "tab_rice_paddy",
-        "name": "Parse ESP32 Status",
-        "property": "payload",
-        "action": "",
-        "pretty": false,
-        "x": 360,
-        "y": 1800,
-        "wires": [
-            [
-                "status_text"
-            ]
-        ]
-    },
-    {
-        "id": "status_text",
-        "type": "ui_text",
-        "z": "tab_rice_paddy",
-        "group": "ui_group_system",
-        "order": 3,
-        "width": "12",
-        "height": "1",
-        "name": "ESP32 Connection",
-        "label": "ESP32 STATUS",
-        "format": "{{msg.payload.status}} - {{msg.payload.message}}",
-        "layout": "row-spread",
-        "className": "",
-        "x": 610,
-        "y": 1800,
-        "wires": []
+  {
+    "id": "rp_tab",
+    "type": "tab",
+    "label": "Rice Paddy IoT Controller - FINAL",
+    "disabled": false,
+    "info": "ESP32-WROOM-32D + HiveMQ Cloud + Node-RED Dashboard 2.0"
+  },
+  {
+    "id": "rp_broker",
+    "type": "mqtt-broker",
+    "name": "HiveMQ Cloud",
+    "broker": "YOUR_CLUSTER_HOST.s1.eu.hivemq.cloud",
+    "port": "8883",
+    "tls": "rp_tls",
+    "clientid": "NodeRED-RicePaddy",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "credentials": {
+      "user": "YOUR_HIVEMQ_USERNAME",
+      "password": "YOUR_HIVEMQ_PASSWORD"
     }
+  },
+  {
+    "id": "rp_tls",
+    "type": "tls-config",
+    "name": "HiveMQ TLS",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "",
+    "keyname": "",
+    "caname": "",
+    "verifyservercert": true,
+    "alpnprotocol": ""
+  },
+  {
+    "id": "rp_ui_base",
+    "type": "ui-base",
+    "name": "Rice Paddy Dashboard",
+    "path": "/dashboard",
+    "appIcon": "",
+    "includeClientData": true,
+    "acceptsClientConfig": [
+      "ui-notification",
+      "ui-control"
+    ],
+    "showPathInSidebar": false,
+    "headerContent": "page",
+    "navigationStyle": "default",
+    "titleBarStyle": "default",
+    "showReconnectNotification": true,
+    "notificationDisplayTime": 5,
+    "showDisconnectNotification": true,
+    "allowInstall": false
+  },
+  {
+    "id": "rp_ui_theme",
+    "type": "ui-theme",
+    "name": "Rice Paddy Theme",
+    "colors": {
+      "surface": "#ffffff",
+      "primary": "#287a46",
+      "bgPage": "#f3f6f3",
+      "groupBg": "#ffffff",
+      "groupOutline": "#d5dfd7"
+    },
+    "sizes": {
+      "density": "default",
+      "pagePadding": "12px",
+      "groupGap": "12px",
+      "groupBorderRadius": "8px",
+      "widgetGap": "12px"
+    }
+  },
+  {
+    "id": "rp_ui_page",
+    "type": "ui-page",
+    "name": "Irrigation Monitoring",
+    "ui": "rp_ui_base",
+    "path": "/rice-paddy",
+    "icon": "dashboard",
+    "layout": "grid",
+    "theme": "rp_ui_theme",
+    "breakpoints": [
+      {
+        "name": "Default",
+        "px": "0",
+        "cols": "3"
+      },
+      {
+        "name": "Tablet",
+        "px": "576",
+        "cols": "6"
+      },
+      {
+        "name": "Desktop",
+        "px": "768",
+        "cols": "12"
+      }
+    ],
+    "order": 1,
+    "visible": true,
+    "disabled": false
+  },
+  {
+    "id": "rp_ui_group",
+    "type": "ui-group",
+    "name": "Irrigation Control and Telemetry",
+    "page": "rp_ui_page",
+    "width": "12",
+    "height": "12",
+    "order": 1,
+    "showTitle": true,
+    "className": "",
+    "visible": true,
+    "disabled": false,
+    "groupType": "default"
+  },
+  {
+    "id": "rp_control_template",
+    "type": "ui-template",
+    "z": "rp_tab",
+    "group": "rp_ui_group",
+    "page": "",
+    "ui": "",
+    "name": "Phase Day and Manual Controls",
+    "order": 1,
+    "width": "12",
+    "height": "9",
+    "head": "",
+    "format": "<template>\n  <div style=\"padding:12px\">\n    <h2>Rice Paddy Irrigation Controller</h2>\n    <p>Select AUTO for sensor-based operation. Select MANUAL to operate individual outputs.</p>\n\n    <label><b>Operating mode</b></label>\n    <select v-model=\"mode\" style=\"display:block;width:100%;padding:10px;margin:6px 0 14px\">\n      <option value=\"AUTO\">AUTO — Automatic control</option>\n      <option value=\"MANUAL\">MANUAL — Individual output controls</option>\n    </select>\n\n    <label><b>Growth phase</b></label>\n    <select v-model.number=\"phase\" @change=\"day=Math.min(day, duration)\" style=\"display:block;width:100%;padding:10px;margin:6px 0 14px\">\n      <option :value=\"1\">Phase 1 — Establishment (20 days)</option>\n      <option :value=\"2\">Phase 2 — Vegetative growth (70 days)</option>\n      <option :value=\"3\">Phase 3 — Final growth and drainage (30 days)</option>\n    </select>\n\n    <label><b>Day within phase (1–{{ duration }})</b></label>\n    <input type=\"number\" v-model.number=\"day\" min=\"1\" :max=\"duration\"\n      style=\"display:block;width:100%;box-sizing:border-box;padding:10px;margin:6px 0 14px\"/>\n\n    <button @click=\"applySettings\" style=\"padding:12px 18px;background:#287a46;color:#fff;border:0;border-radius:6px;cursor:pointer\">\n      Apply Phase, Day and Mode\n    </button>\n\n    <hr style=\"margin:20px 0\"/>\n    <div v-if=\"mode === 'MANUAL'\">\n      <h3>Manual Actuator Controls</h3>\n      <p style=\"font-size:13px;color:#666\">Each button sends the complete output state. Only available while MANUAL is selected.</p>\n\n      <div v-for=\"(v,i) in valves\" :key=\"'valve'+i\"\n        style=\"display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #ddd\">\n        <b>Zone {{ i+1 }} irrigation valve</b>\n        <button @click=\"setValve(i,!valves[i])\"\n          :style=\"{padding:'10px 16px',border:0,borderRadius:'6px',color:'#fff',background:valves[i]?'#b42318':'#287a46',cursor:'pointer'}\">\n          {{ valves[i] ? 'TURN OFF' : 'TURN ON' }}\n        </button>\n      </div>\n\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ddd\">\n        <b>Drainage relay</b>\n        <button @click=\"setDrainRelay(!drainRelay)\"\n          :style=\"{padding:'10px 16px',border:0,borderRadius:'6px',color:'#fff',background:drainRelay?'#b42318':'#287a46',cursor:'pointer'}\">\n          {{ drainRelay ? 'TURN OFF' : 'TURN ON' }}\n        </button>\n      </div>\n\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #ddd\">\n        <b>Drainage servo</b>\n        <button @click=\"setDrainServo(!drainServoOpen)\"\n          :style=\"{padding:'10px 16px',border:0,borderRadius:'6px',color:'#fff',background:drainServoOpen?'#b42318':'#287a46',cursor:'pointer'}\">\n          {{ drainServoOpen ? 'CLOSE SERVO' : 'OPEN SERVO' }}\n        </button>\n      </div>\n\n      <button @click=\"allOff\" style=\"margin-top:14px;padding:12px 18px;background:#b42318;color:#fff;border:0;border-radius:6px;cursor:pointer\">\n        ALL OUTPUTS OFF\n      </button>\n    </div>\n    <div v-else>\n      <h3>Manual Controls Disabled</h3>\n      <p>Switch to MANUAL and press Apply Phase, Day and Mode before operating individual outputs.</p>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      mode: 'AUTO',\n      phase: 1,\n      day: 1,\n      valves: [false, false, false],\n      drainRelay: false,\n      drainServoOpen: false\n    }\n  },\n  computed: {\n    duration() {\n      return ({1:20, 2:70, 3:30})[this.phase] || 20\n    }\n  },\n  methods: {\n    sendCommand(manualControl) {\n      this.send({\n        topic: 'ricepaddy/control',\n        payload: {\n          mode: this.mode,\n          phase: Number(this.phase),\n          day: Number(this.day),\n          apply: false,\n          manualControl: manualControl,\n          valves: this.valves.slice(),\n          drainRelay: this.drainRelay,\n          drainServoOpen: this.drainServoOpen\n        }\n      })\n    },\n    applySettings() {\n      const limits = {1:20, 2:70, 3:30}\n      const p = Number(this.phase)\n      const d = Number(this.day)\n      if (!limits[p] || !Number.isInteger(d) || d < 1 || d > limits[p]) {\n        alert('Invalid day for the selected phase.')\n        return\n      }\n\n      if (this.mode === 'MANUAL') {\n        // Enter MANUAL with outputs explicitly OFF for safe handover.\n        this.valves = [false, false, false]\n        this.drainRelay = false\n        this.drainServoOpen = false\n        this.send({\n          topic: 'ricepaddy/control',\n          payload: {\n            mode: 'MANUAL', phase: p, day: d, apply: true,\n            manualControl: true, valves: [false,false,false],\n            drainRelay: false, drainServoOpen: false\n          }\n        })\n      } else {\n        this.send({\n          topic: 'ricepaddy/control',\n          payload: {mode:'AUTO', phase:p, day:d, apply:true}\n        })\n      }\n    },\n    setValve(i, state) {\n      if (this.mode !== 'MANUAL') return\n      this.valves[i] = state\n      this.sendCommand(true)\n    },\n    setDrainRelay(state) {\n      if (this.mode !== 'MANUAL') return\n      this.drainRelay = state\n      this.sendCommand(true)\n    },\n    setDrainServo(state) {\n      if (this.mode !== 'MANUAL') return\n      this.drainServoOpen = state\n      this.sendCommand(true)\n    },\n    allOff() {\n      if (this.mode !== 'MANUAL') return\n      this.valves = [false, false, false]\n      this.drainRelay = false\n      this.drainServoOpen = false\n      this.sendCommand(true)\n    }\n  }\n}\n</script>",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "resendOnRefresh": false,
+    "templateScope": "local",
+    "className": "",
+    "x": 230,
+    "y": 100,
+    "wires": [
+      [
+        "rp_control_json"
+      ]
+    ]
+  },
+  {
+    "id": "rp_control_json",
+    "type": "function",
+    "z": "rp_tab",
+    "name": "Serialize MQTT command",
+    "func": "if (typeof msg.payload !== 'string') {\n    msg.payload = JSON.stringify(msg.payload);\n}\nmsg.topic = 'ricepaddy/control';\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 510,
+    "y": 100,
+    "wires": [
+      [
+        "rp_control_mqtt"
+      ]
+    ]
+  },
+  {
+    "id": "rp_control_mqtt",
+    "type": "mqtt out",
+    "z": "rp_tab",
+    "name": "Send commands to ESP32",
+    "topic": "",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "application/json",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "rp_broker",
+    "x": 760,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "rp_telemetry_mqtt",
+    "type": "mqtt in",
+    "z": "rp_tab",
+    "name": "ESP32 Live Telemetry",
+    "topic": "ricepaddy/telemetry",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "rp_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 240,
+    "wires": [
+      [
+        "rp_parse_telemetry"
+      ]
+    ]
+  },
+  {
+    "id": "rp_parse_telemetry",
+    "type": "json",
+    "z": "rp_tab",
+    "name": "Parse telemetry JSON",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 450,
+    "y": 240,
+    "wires": [
+      [
+        "rp_telemetry_template",
+        "rp_telemetry_debug"
+      ]
+    ]
+  },
+  {
+    "id": "rp_telemetry_template",
+    "type": "ui-template",
+    "z": "rp_tab",
+    "group": "rp_ui_group",
+    "page": "",
+    "ui": "",
+    "name": "Live Sensor and Actuator Display",
+    "order": 2,
+    "width": "12",
+    "height": "8",
+    "head": "",
+    "format": "<template>\n  <div style=\"padding:12px\">\n    <h2>Live System Information</h2>\n    <div v-if=\"msg && msg.payload && msg.payload.phase\">\n      <p><b>Mode:</b> {{ msg.payload.mode }}</p>\n      <p><b>Current phase:</b> {{ msg.payload.phase }} — Day {{ msg.payload.day }} of {{ msg.payload.phaseDuration }}</p>\n\n      <h3>Soil Moisture</h3>\n      <div v-for=\"(value,i) in (msg.payload.soilMoisture || [])\" :key=\"'soil'+i\" style=\"margin:10px 0\">\n        <b>Zone {{ i+1 }}:</b> {{ value === null ? 'Sensor fault' : Number(value).toFixed(1)+'%' }}\n        <div style=\"height:12px;background:#e5e7eb;border-radius:8px;overflow:hidden\">\n          <div :style=\"{width:(value===null?0:Math.max(0,Math.min(100,Number(value))))+'%',height:'12px',background:'#287a46'}\"></div>\n        </div>\n      </div>\n\n      <h3>Water Distance from Sensor</h3>\n      <p v-for=\"(value,i) in (msg.payload.waterDistanceCm || [])\" :key=\"'water'+i\">\n        Zone {{ i+1 }}: {{ value === null ? 'Sensor fault' : Number(value).toFixed(1)+' cm' }}\n      </p>\n\n      <h3>Valve States</h3>\n      <p v-for=\"(value,i) in (msg.payload.valves || [])\" :key=\"'valve'+i\">\n        Zone {{ i+1 }}: <b>{{ value ? 'OPEN' : 'CLOSED' }}</b>\n      </p>\n\n      <p><b>Drainage relay:</b> {{ msg.payload.drainRelay ? 'ON' : 'OFF' }}</p>\n      <p><b>Drainage servo:</b> {{ msg.payload.drainServoOpen ? 'OPEN' : 'CLOSED' }}</p>\n      <p><b>MQTT:</b> {{ msg.payload.mqttConnected ? 'Connected' : 'Disconnected' }}</p>\n      <p><b>Soil sensor faults:</b> {{ (msg.payload.soilSensorFault || []).map((v,i)=>v?'Zone '+(i+1):'').filter(Boolean).join(', ') || 'None reported' }}</p>\n      <p><b>Water sensor faults:</b> {{ (msg.payload.waterSensorFault || []).map((v,i)=>v?'Zone '+(i+1):'').filter(Boolean).join(', ') || 'None reported' }}</p>\n    </div>\n    <p v-else>Waiting for telemetry from ESP32...</p>\n  </div>\n</template>",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "resendOnRefresh": false,
+    "templateScope": "local",
+    "className": "",
+    "x": 730,
+    "y": 240,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "rp_telemetry_debug",
+    "type": "debug",
+    "z": "rp_tab",
+    "name": "Telemetry Debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 700,
+    "y": 320,
+    "wires": []
+  },
+  {
+    "id": "rp_status_mqtt",
+    "type": "mqtt in",
+    "z": "rp_tab",
+    "name": "ESP32 Status",
+    "topic": "ricepaddy/status",
+    "qos": "1",
+    "datatype": "auto",
+    "broker": "rp_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 190,
+    "y": 400,
+    "wires": [
+      [
+        "rp_status_json"
+      ]
+    ]
+  },
+  {
+    "id": "rp_status_json",
+    "type": "json",
+    "z": "rp_tab",
+    "name": "Parse status JSON",
+    "property": "payload",
+    "action": "",
+    "pretty": false,
+    "x": 430,
+    "y": 400,
+    "wires": [
+      [
+        "rp_status_debug"
+      ]
+    ]
+  },
+  {
+    "id": "rp_status_debug",
+    "type": "debug",
+    "z": "rp_tab",
+    "name": "ESP32 Status Debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 690,
+    "y": 400,
+    "wires": []
+  }
 ]
