@@ -10,7 +10,7 @@
     "id": "rp_broker",
     "type": "mqtt-broker",
     "name": "HiveMQ Cloud",
-    "broker": "YOUR_CLUSTER_HOST.s1.eu.hivemq.cloud",
+    "broker": "8b2cddcc56554040b7ac19f53f364ddb.s1.eu.hivemq.cloud",
     "port": "8883",
     "tls": "rp_tls",
     "clientid": "NodeRED-RicePaddy",
@@ -30,8 +30,8 @@
     "willQos": "0",
     "willPayload": "",
     "credentials": {
-      "user": "YOUR_HIVEMQ_USERNAME",
-      "password": "YOUR_HIVEMQ_PASSWORD"
+      "user": "hivemq.webclient.1790990493538",
+      "password": "W4KUl@*foKHh6F%QCsff1gKOAcNadf&N"
     }
   },
   {
